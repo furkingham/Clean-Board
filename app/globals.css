@@ -32,3 +32,29 @@ body {
 button, input, textarea, select {
   font: inherit;
 }
+
+/* subtle grid background for landing page */
+.bg-grid::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(rgba(12,18,40,0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(12,18,40,0.12) 1px, transparent 1px);
+  background-size: 120px 120px, 120px 120px;
+  opacity: 0.25;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* utility: simple fades/translates used by landing */
+.translate-y-8 { transform: translateY(2rem); }
+.translate-y-6 { transform: translateY(1.5rem); }
+.opacity-0 { opacity: 0; }
+.opacity-100 { opacity: 1; }
+.transition-all { transition: all 0.5s ease; }
+.duration-700 { transition-duration: 700ms; }
+.duration-800 { transition-duration: 800ms; }
+.duration-900 { transition-duration: 900ms; }
+.duration-1000 { transition-duration: 1000ms; }
+.delay-150 { transition-delay: 150ms; }
+.delay-250 { transition-delay: 250ms; }
+.delay-350 { transition-delay: 350ms; }

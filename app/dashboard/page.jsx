@@ -1,32 +1,48 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
-export default function Dashboard() {
-  const auctionTemplates = [
-    { id: 1, title: "Times Square Billboard", category: "Urban Out-Of-Home" },
-    { id: 2, title: "Downtown LED Wall", category: "City Center Display" },
-    { id: 3, title: "Mall Atrium Display", category: "Retail Footfall" },
-    { id: 4, title: "Science Journal Sidebar Banner", category: "Science Media" },
-    { id: 5, title: "Art Gallery Top Banner", category: "Arts & Culture" },
-  ];
+// ===== CONSTANTS =====
+const MONAD_TESTNET_CHAIN_ID = "0x279F";
+const MONAD_TESTNET_PARAMS = {
+  chainId: MONAD_TESTNET_CHAIN_ID,
+  chainName: "Monad Testnet",
+  nativeCurrency: {
+    name: "Testnet MON Token",
+    symbol: "MON",
+    decimals: 18,
+  },
+  rpcUrls: ["https://testnet-rpc.monad.xyz"],
+  blockExplorerUrls: ["https://testnet.monadexplorer.com"],
+};
 
-  const auctionFeatures = [
-    { endsIn: "2h 12m", minBid: 1.8, topBid: 3.2, impressions: 215000 },
-    { endsIn: "5h 40m", minBid: 1.2, topBid: 1.75, impressions: 132400 },
-    { endsIn: "14h 05m", minBid: 0.9, topBid: 0.95, impressions: 82000 },
-    { endsIn: "8h 20m", minBid: 0.7, topBid: 1.05, impressions: 98000 },
-    { endsIn: "1d 04h", minBid: 0.55, topBid: 0.72, impressions: 67000 },
-  ];
+const AUCTION_TEMPLATES = [
+  { id: 1, title: "Times Square Billboard", category: "Urban Out-Of-Home" },
+  { id: 2, title: "Downtown LED Wall", category: "City Center Display" },
+  { id: 3, title: "Mall Atrium Display", category: "Retail Footfall" },
+  { id: 4, title: "Science Journal Sidebar Banner", category: "Science Media" },
+  { id: 5, title: "Art Gallery Top Banner", category: "Arts & Culture" },
+];
 
-  const initialAuctions = auctionTemplates.map((item, index) => ({
+const AUCTION_FEATURES = [
+  { endsIn: "2h 12m", minBid: 1.8, topBid: 3.2, impressions: 215000 },
+  { endsIn: "5h 40m", minBid: 1.2, topBid: 1.75, impressions: 132400 },
+  { endsIn: "14h 05m", minBid: 0.9, topBid: 0.95, impressions: 82000 },
+  { endsIn: "8h 20m", minBid: 0.7, topBid: 1.05, impressions: 98000 },
+  { endsIn: "1d 04h", minBid: 0.55, topBid: 0.72, impressions: 67000 },
+];
+
+const getInitialAuctions = () =>
+  AUCTION_TEMPLATES.map((item, index) => ({
     ...item,
-    ...auctionFeatures[index],
-    ethRate: (auctionFeatures[index].topBid * 0.98).toFixed(2),
+    ...AUCTION_FEATURES[index],
+    ethRate: (AUCTION_FEATURES[index].topBid * 0.98).toFixed(2),
   }));
 
-  const [auctions, setAuctions] = useState(initialAuctions);
+// ===== COMPONENT =====
+export default function Dashboard() {
+  const [auctions, setAuctions] = useState(getInitialAuctions);
   const [walletAddress, setWalletAddress] = useState("");
   const [chainId, setChainId] = useState("");
   const [connecting, setConnecting] = useState(false);
@@ -35,54 +51,35 @@ export default function Dashboard() {
   const [txProcessing, setTxProcessing] = useState(false);
   const [toast, setToast] = useState(null);
 
-  const MONAD_TESTNET_CHAIN_ID = "0x279F";
-  const MONAD_TESTNET_PARAMS = {
-    chainId: MONAD_TESTNET_CHAIN_ID,
-    chainName: "Monad Testnet",
-    nativeCurrency: {
-      name: "Testnet MON Token",
-      symbol: "MON",
-      decimals: 18,
-    },
-    rpcUrls: ["https://testnet-rpc.monad.xyz"],
-    blockExplorerUrls: ["https://testnet.monadexplorer.com"],
-  };
+  // ===== DERIVED STATE =====
+  const isConnected = useMemo(() => Boolean(walletAddress), [walletAddress]);
+  const isCorrectNetwork = useMemo(() => chainId === MONAD_TESTNET_CHAIN_ID, [chainId]);
+  const canBid = useMemo(() => isConnected && isCorrectNetwork, [isConnected, isCorrectNetwork]);
+  const displayAddress = useMemo(
+    () =>
+      walletAddress
+        ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
+        : "Wallet Disconnected",
+    [walletAddress]
+  );
 
-  const isConnected = Boolean(walletAddress);
-  const isCorrectNetwork = chainId === MONAD_TESTNET_CHAIN_ID;
-  const canBid = isConnected && isCorrectNetwork;
-  const displayAddress = walletAddress
-    ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
-    : "Wallet Disconnected";
-  const networkLabel = chainId
-    ? isCorrectNetwork
-      ? "Monad Testnet"
-      : `Wrong network (${chainId})`
-    : "Disconnected";
+  // ===== ETHEREUM EVENT LISTENERS =====
 
+  // ===== ETHEREUM EVENT LISTENERS =====
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || !window.ethereum) return;
 
-    const handleAccountsChanged = accounts => {
-      if (accounts.length > 0) {
-        setWalletAddress(accounts[0]);
-      } else {
-        setWalletAddress("");
-      }
+    const handleAccountsChanged = (accounts) => {
+      setWalletAddress(accounts.length > 0 ? accounts[0] : "");
     };
 
-    const handleChainChanged = chain => {
+    const handleChainChanged = (chain) => {
       setChainId(chain);
     };
 
-    if (window.ethereum) {
-      window.ethereum
-        .request({ method: "eth_chainId" })
-        .then(handleChainChanged)
-        .catch(() => {});
-      window.ethereum.on("accountsChanged", handleAccountsChanged);
-      window.ethereum.on("chainChanged", handleChainChanged);
-    }
+    window.ethereum.request({ method: "eth_chainId" }).then(handleChainChanged).catch(() => {});
+    window.ethereum.on("accountsChanged", handleAccountsChanged);
+    window.ethereum.on("chainChanged", handleChainChanged);
 
     return () => {
       if (window.ethereum?.removeListener) {
@@ -92,21 +89,21 @@ export default function Dashboard() {
     };
   }, []);
 
+  // ===== TOAST AUTO-DISMISS =====
   useEffect(() => {
     if (!toast) return;
     const timeout = setTimeout(() => setToast(null), 4000);
     return () => clearTimeout(timeout);
   }, [toast]);
 
-  async function ensureMonadTestnet() {
+  // ===== WALLET FUNCTIONS =====
+  const ensureMonadTestnet = useCallback(async () => {
     if (typeof window === "undefined" || !window.ethereum) return false;
 
     try {
       const currentChain = await window.ethereum.request({ method: "eth_chainId" });
       setChainId(currentChain);
-      if (currentChain === MONAD_TESTNET_CHAIN_ID) {
-        return true;
-      }
+      if (currentChain === MONAD_TESTNET_CHAIN_ID) return true;
 
       await window.ethereum.request({
         method: "wallet_switchEthereumChain",
@@ -129,9 +126,9 @@ export default function Dashboard() {
       }
       return false;
     }
-  }
+  }, []);
 
-  async function connectWallet() {
+  const connectWallet = useCallback(async () => {
     if (typeof window === "undefined" || !window.ethereum) {
       setToast({ type: "error", message: "MetaMask not found. Install MetaMask to connect." });
       return;
@@ -160,32 +157,36 @@ export default function Dashboard() {
     } finally {
       setConnecting(false);
     }
-  }
+  }, [ensureMonadTestnet]);
 
-  function disconnectWallet() {
+  const disconnectWallet = useCallback(() => {
     setWalletAddress("");
     setToast({ type: "info", message: "MetaMask disconnected." });
-  }
+  }, []);
 
-  function openBidModal(auction) {
-    if (!isConnected) {
-      setToast({ type: "error", message: "Please connect your MetaMask wallet first to place a bid." });
-      return;
-    }
-    if (!isCorrectNetwork) {
-      setToast({ type: "error", message: "Switch MetaMask to Monad Testnet to place bids." });
-      return;
-    }
-    setActiveBidAuction(auction);
-    setBidAmount(String((auction.topBid + 0.1).toFixed(2)));
-  }
+  // ===== BID MODAL FUNCTIONS =====
+  const openBidModal = useCallback(
+    (auction) => {
+      if (!isConnected) {
+        setToast({ type: "error", message: "Please connect your MetaMask wallet first to place a bid." });
+        return;
+      }
+      if (!isCorrectNetwork) {
+        setToast({ type: "error", message: "Switch MetaMask to Monad Testnet to place bids." });
+        return;
+      }
+      setActiveBidAuction(auction);
+      setBidAmount(String((auction.topBid + 0.1).toFixed(2)));
+    },
+    [isConnected, isCorrectNetwork]
+  );
 
-  function closeBidModal() {
+  const closeBidModal = useCallback(() => {
     setActiveBidAuction(null);
     setBidAmount("");
-  }
+  }, []);
 
-  function submitBid() {
+  const submitBid = useCallback(() => {
     if (!isConnected) {
       setToast({ type: "error", message: "Please connect your MetaMask wallet first to place a bid." });
       return;
@@ -200,11 +201,13 @@ export default function Dashboard() {
     setTxProcessing(true);
     setTimeout(() => {
       setTxProcessing(false);
-      setAuctions(prev => prev.map(a => (a.id === activeBidAuction.id ? { ...a, topBid: amount } : a)));
+      setAuctions((prev) =>
+        prev.map((a) => (a.id === activeBidAuction.id ? { ...a, topBid: amount } : a))
+      );
       closeBidModal();
       setToast({ type: "success", message: "Bid confirmed on Monad (simulated)." });
     }, 3500);
-  }
+  }, [isConnected, bidAmount, activeBidAuction, closeBidModal]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#001f3f] via-[#00122a] to-black text-slate-100">
@@ -220,13 +223,7 @@ export default function Dashboard() {
 
           <button
             type="button"
-            onClick={() => {
-              if (isConnected) {
-                disconnectWallet();
-              } else {
-                connectWallet();
-              }
-            }}
+            onClick={isConnected ? disconnectWallet : connectWallet}
             className={`px-4 py-2 rounded-md font-medium transition ${
               isConnected
                 ? "bg-emerald-600 hover:bg-emerald-500"
@@ -303,7 +300,11 @@ export default function Dashboard() {
 
       {activeBidAuction && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeBidModal} aria-hidden />
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={closeBidModal}
+            aria-hidden
+          />
 
           <div className="relative bg-[#061726] border border-white/6 rounded-xl p-6 w-full max-w-md mx-4">
             <h4 className="text-lg font-semibold">Place Bid — {activeBidAuction.title}</h4>

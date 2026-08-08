@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { motion, useScroll, useTransform } from 'motion/react'
-import { Hero } from '@/components/hero'
+import { Hero } from './hero'
 
 export function KeyholeIntro() {
   // Driving the timeline off raw scrollY (pixels) is always monotonic. Tracking

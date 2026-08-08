@@ -3,6 +3,28 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
+// ===== PROVIDER HELPERS =====
+// When multiple wallets are installed they all inject into window.ethereum.
+// We need to find the *real* MetaMask provider, not the one Phantom hijacked.
+function getMetaMaskProvider() {
+  if (typeof window === "undefined") return null;
+
+  // Multi-wallet: each extension registers itself in the providers array
+  if (Array.isArray(window.ethereum?.providers)) {
+    const mm = window.ethereum.providers.find(
+      (p) => p.isMetaMask && !p.isPhantom
+    );
+    return mm ?? null;
+  }
+
+  // Single wallet: make sure it is actually MetaMask and not Phantom
+  if (window.ethereum?.isMetaMask && !window.ethereum?.isPhantom) {
+    return window.ethereum;
+  }
+
+  return null;
+}
+
 // ===== CONSTANTS =====
 const MONAD_TESTNET_CHAIN_ID = "0x279F";
 const MONAD_TESTNET_PARAMS = {
@@ -40,12 +62,71 @@ const getInitialAuctions = () =>
     ethRate: (AUCTION_FEATURES[index].topBid * 0.98).toFixed(2),
   }));
 
+// ===== WALLET SELECTOR MODAL =====
+function WalletSelectorModal({ onSelect, onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        onClick={onClose}
+        aria-hidden
+      />
+
+      {/* Modal */}
+      <div className="relative z-10 w-[340px] rounded-2xl bg-[#0d0d0d] border border-white/10 shadow-2xl p-6 flex flex-col items-center text-white">
+        {/* Icons */}
+        <div className="flex items-center gap-4 mb-5">
+          <span style={{ fontSize: "2.6rem" }}>👻</span>
+          <span style={{ fontSize: "2.6rem" }}>🦊</span>
+        </div>
+
+        <h2 className="text-2xl font-bold text-center leading-snug mb-7">
+          Which extension do you<br />want to connect with?
+        </h2>
+
+        {/* MetaMask button */}
+        <button
+          id="wallet-select-metamask"
+          type="button"
+          onClick={() => onSelect("metamask")}
+          className="w-full mb-3 py-3 rounded-full bg-[#1a1a1a] border border-white/10 text-white font-semibold text-base hover:bg-white/10 transition"
+        >
+          Use MetaMask
+        </button>
+
+        {/* Phantom button */}
+        <button
+          id="wallet-select-phantom"
+          type="button"
+          onClick={() => onSelect("phantom")}
+          className="w-full py-3 rounded-full font-semibold text-base transition"
+          style={{
+            background: "linear-gradient(135deg, #ab9ff2 0%, #7b5ea7 100%)",
+            color: "#fff",
+            boxShadow: "0 0 20px rgba(171,159,242,0.35)",
+          }}
+        >
+          Use Phantom
+        </button>
+
+        {/* Don't ask again hint */}
+        <p className="mt-5 text-xs text-slate-500 text-center">
+          Configurable in Settings → Default App Wallet.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ===== COMPONENT =====
 export default function Dashboard() {
   const [auctions, setAuctions] = useState(getInitialAuctions);
   const [walletAddress, setWalletAddress] = useState("");
+  const [walletType, setWalletType] = useState(""); // "metamask" | "phantom"
   const [chainId, setChainId] = useState("");
   const [connecting, setConnecting] = useState(false);
+  const [showWalletSelector, setShowWalletSelector] = useState(false);
   const [activeBidAuction, setActiveBidAuction] = useState(null);
   const [bidAmount, setBidAmount] = useState("");
   const [txProcessing, setTxProcessing] = useState(false);
@@ -53,8 +134,12 @@ export default function Dashboard() {
 
   // ===== DERIVED STATE =====
   const isConnected = useMemo(() => Boolean(walletAddress), [walletAddress]);
-  const isCorrectNetwork = useMemo(() => chainId === MONAD_TESTNET_CHAIN_ID, [chainId]);
-  const canBid = useMemo(() => isConnected && isCorrectNetwork, [isConnected, isCorrectNetwork]);
+  const isCorrectNetwork = useMemo(
+    () => walletType === "phantom" || chainId === MONAD_TESTNET_CHAIN_ID,
+    [walletType, chainId]
+  );
+  // Bid only requires a connected wallet — network mismatch shows a warning but doesn't block
+  const canBid = useMemo(() => isConnected, [isConnected]);
   const displayAddress = useMemo(
     () =>
       walletAddress
@@ -63,31 +148,34 @@ export default function Dashboard() {
     [walletAddress]
   );
 
-  // ===== ETHEREUM EVENT LISTENERS =====
-
-  // ===== ETHEREUM EVENT LISTENERS =====
+  // ===== ETHEREUM EVENT LISTENERS (MetaMask) =====
   useEffect(() => {
-    if (typeof window === "undefined" || !window.ethereum) return;
+    const provider = getMetaMaskProvider();
+    if (!provider) return;
 
     const handleAccountsChanged = (accounts) => {
-      setWalletAddress(accounts.length > 0 ? accounts[0] : "");
+      if (walletType === "metamask") {
+        setWalletAddress(accounts.length > 0 ? accounts[0] : "");
+      }
     };
 
     const handleChainChanged = (chain) => {
-      setChainId(chain);
-    };
-
-    window.ethereum.request({ method: "eth_chainId" }).then(handleChainChanged).catch(() => {});
-    window.ethereum.on("accountsChanged", handleAccountsChanged);
-    window.ethereum.on("chainChanged", handleChainChanged);
-
-    return () => {
-      if (window.ethereum?.removeListener) {
-        window.ethereum.removeListener("accountsChanged", handleAccountsChanged);
-        window.ethereum.removeListener("chainChanged", handleChainChanged);
+      if (walletType === "metamask") {
+        setChainId(chain);
       }
     };
-  }, []);
+
+    provider.request({ method: "eth_chainId" }).then(handleChainChanged).catch(() => {});
+    provider.on("accountsChanged", handleAccountsChanged);
+    provider.on("chainChanged", handleChainChanged);
+
+    return () => {
+      if (provider?.removeListener) {
+        provider.removeListener("accountsChanged", handleAccountsChanged);
+        provider.removeListener("chainChanged", handleChainChanged);
+      }
+    };
+  }, [walletType]);
 
   // ===== TOAST AUTO-DISMISS =====
   useEffect(() => {
@@ -97,15 +185,15 @@ export default function Dashboard() {
   }, [toast]);
 
   // ===== WALLET FUNCTIONS =====
-  const ensureMonadTestnet = useCallback(async () => {
-    if (typeof window === "undefined" || !window.ethereum) return false;
+  const ensureMonadTestnet = useCallback(async (provider) => {
+    if (!provider) return false;
 
     try {
-      const currentChain = await window.ethereum.request({ method: "eth_chainId" });
+      const currentChain = await provider.request({ method: "eth_chainId" });
       setChainId(currentChain);
       if (currentChain === MONAD_TESTNET_CHAIN_ID) return true;
 
-      await window.ethereum.request({
+      await provider.request({
         method: "wallet_switchEthereumChain",
         params: [{ chainId: MONAD_TESTNET_CHAIN_ID }],
       });
@@ -114,7 +202,7 @@ export default function Dashboard() {
     } catch (error) {
       if (error?.code === 4902 || error?.data?.originalError?.code === 4902) {
         try {
-          await window.ethereum.request({
+          await provider.request({
             method: "wallet_addEthereumChain",
             params: [MONAD_TESTNET_PARAMS],
           });
@@ -128,57 +216,110 @@ export default function Dashboard() {
     }
   }, []);
 
-  const connectWallet = useCallback(async () => {
-    if (typeof window === "undefined" || !window.ethereum) {
-      setToast({ type: "error", message: "MetaMask not found. Install MetaMask to connect." });
+  const connectMetaMask = useCallback(async () => {
+    const provider = getMetaMaskProvider();
+    if (!provider) {
+      setToast({ type: "error", message: "MetaMask not found. Please install the MetaMask extension." });
       return;
     }
 
     setConnecting(true);
     try {
-      const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+      // wallet_requestPermissions always opens the MetaMask account-picker popup,
+      // even if the site already has a saved permission — so the user can choose
+      // a different account each time.
+      await provider.request({
+        method: "wallet_requestPermissions",
+        params: [{ eth_accounts: {} }],
+      });
+
+      // After the user approves, fetch the selected account
+      const accounts = await provider.request({ method: "eth_accounts" });
       const address = accounts?.[0] ?? "";
       if (!address) {
         setToast({ type: "error", message: "No wallet account was returned." });
         return;
       }
 
-      const networkOk = await ensureMonadTestnet();
-      if (!networkOk) {
-        setWalletAddress("");
-        setToast({ type: "error", message: "Please switch to Monad Testnet in MetaMask." });
-        return;
-      }
-
+      // Always set the wallet address first — connection is independent of network
       setWalletAddress(address);
-      setToast({ type: "success", message: "MetaMask connected on Monad Testnet." });
+      setWalletType("metamask");
+
+      // Attempt network switch non-blocking — warn but do NOT prevent connection
+      const networkOk = await ensureMonadTestnet(provider);
+      if (!networkOk) {
+        setToast({ type: "info", message: "MetaMask connected. Please switch to Monad Testnet for full functionality." });
+      } else {
+        setToast({ type: "success", message: "MetaMask connected on Monad Testnet." });
+      }
     } catch (error) {
-      setToast({ type: "error", message: "Wallet connection rejected or failed." });
+      setToast({ type: "error", message: "MetaMask connection rejected or failed." });
     } finally {
       setConnecting(false);
     }
   }, [ensureMonadTestnet]);
 
-  const disconnectWallet = useCallback(() => {
-    setWalletAddress("");
-    setToast({ type: "info", message: "MetaMask disconnected." });
+  const connectPhantom = useCallback(async () => {
+    if (typeof window === "undefined") return;
+
+    // Phantom injects window.solana; if not found, prompt installation
+    const phantom = window.phantom?.solana ?? window.solana;
+
+    if (!phantom || !phantom.isPhantom) {
+      setToast({ type: "error", message: "Phantom wallet not found. Please install the Phantom extension." });
+      return;
+    }
+
+    setConnecting(true);
+    try {
+      const response = await phantom.connect();
+      const address = response.publicKey.toString();
+      setWalletAddress(address);
+      setWalletType("phantom");
+      setToast({ type: "success", message: "Phantom wallet connected." });
+    } catch (error) {
+      setToast({ type: "error", message: "Phantom connection rejected or failed." });
+    } finally {
+      setConnecting(false);
+    }
   }, []);
+
+  // Called when user picks a wallet from the modal
+  const handleWalletSelect = useCallback(
+    async (type) => {
+      setShowWalletSelector(false);
+      if (type === "metamask") {
+        await connectMetaMask();
+      } else if (type === "phantom") {
+        await connectPhantom();
+      }
+    },
+    [connectMetaMask, connectPhantom]
+  );
+
+  const disconnectWallet = useCallback(() => {
+    // Disconnect Phantom gracefully if it was used
+    if (walletType === "phantom") {
+      const phantom = window.phantom?.solana ?? window.solana;
+      phantom?.disconnect().catch(() => {});
+    }
+    setWalletAddress("");
+    setWalletType("");
+    setChainId("");
+    setToast({ type: "info", message: "Wallet disconnected." });
+  }, [walletType]);
 
   // ===== BID MODAL FUNCTIONS =====
   const openBidModal = useCallback(
     (auction) => {
       if (!isConnected) {
-        setToast({ type: "error", message: "Please connect your MetaMask wallet first to place a bid." });
-        return;
-      }
-      if (!isCorrectNetwork) {
-        setToast({ type: "error", message: "Switch MetaMask to Monad Testnet to place bids." });
+        setToast({ type: "error", message: "Please connect your wallet first to place a bid." });
         return;
       }
       setActiveBidAuction(auction);
       setBidAmount(String((auction.topBid + 0.1).toFixed(2)));
     },
-    [isConnected, isCorrectNetwork]
+    [isConnected]
   );
 
   const closeBidModal = useCallback(() => {
@@ -188,7 +329,7 @@ export default function Dashboard() {
 
   const submitBid = useCallback(() => {
     if (!isConnected) {
-      setToast({ type: "error", message: "Please connect your MetaMask wallet first to place a bid." });
+      setToast({ type: "error", message: "Please connect your wallet first to place a bid." });
       return;
     }
 
@@ -217,13 +358,20 @@ export default function Dashboard() {
         </Link>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="rounded-full bg-slate-900/80 px-3 py-2 text-sm font-medium text-slate-200 ring-1 ring-white/10">
+          {/* Wallet badge – show wallet type icon when connected */}
+          <div className="flex items-center gap-2 rounded-full bg-slate-900/80 px-3 py-2 text-sm font-medium text-slate-200 ring-1 ring-white/10">
+            {isConnected && (
+              <span style={{ fontSize: "1rem" }}>
+                {walletType === "phantom" ? "👻" : "🦊"}
+              </span>
+            )}
             {displayAddress}
           </div>
 
           <button
+            id="wallet-connect-btn"
             type="button"
-            onClick={isConnected ? disconnectWallet : connectWallet}
+            onClick={isConnected ? disconnectWallet : () => setShowWalletSelector(true)}
             className={`px-4 py-2 rounded-md font-medium transition ${
               isConnected
                 ? "bg-emerald-600 hover:bg-emerald-500"
@@ -286,11 +434,9 @@ export default function Dashboard() {
                 </button>
               </div>
 
-              {!canBid && (
+              {!isConnected && (
                 <div className="mt-3 text-xs text-amber-300">
-                  {isConnected
-                    ? "Switch to Monad Testnet to place bids."
-                    : "Please connect your MetaMask wallet first to place a bid."}
+                  Please connect your wallet first to place a bid.
                 </div>
               )}
             </div>
@@ -298,6 +444,15 @@ export default function Dashboard() {
         </section>
       </main>
 
+      {/* Wallet Selector Modal */}
+      {showWalletSelector && (
+        <WalletSelectorModal
+          onSelect={handleWalletSelect}
+          onClose={() => setShowWalletSelector(false)}
+        />
+      )}
+
+      {/* Bid Modal */}
       {activeBidAuction && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div
@@ -347,6 +502,7 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* TX Processing Overlay */}
       {txProcessing && (
         <div className="fixed inset-0 z-60 flex items-center justify-center pointer-events-none">
           <div className="absolute inset-0 bg-black/60" />
@@ -360,6 +516,7 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Toast */}
       {toast && (
         <div className="fixed right-6 bottom-6 z-50">
           <div

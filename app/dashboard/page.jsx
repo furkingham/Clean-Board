@@ -4,37 +4,178 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 export default function Dashboard() {
-  const initialAuctions = [
-    { id: 1, title: "Times Square Billboard", topBid: 3.2, endsIn: "2h 13m" },
-    { id: 2, title: "Downtown LED Wall", topBid: 1.75, endsIn: "5h 40m" },
-    { id: 3, title: "Mall Atrium Display", topBid: 0.9, endsIn: "1d 3h" },
+  const auctionTemplates = [
+    { id: 1, title: "Times Square Billboard", category: "Urban Out-Of-Home" },
+    { id: 2, title: "Downtown LED Wall", category: "City Center Display" },
+    { id: 3, title: "Mall Atrium Display", category: "Retail Footfall" },
+    { id: 4, title: "Science Journal Sidebar Banner", category: "Science Media" },
+    { id: 5, title: "Art Gallery Top Banner", category: "Arts & Culture" },
   ];
 
+  const auctionFeatures = [
+    { endsIn: "2h 12m", minBid: 1.8, topBid: 3.2, impressions: 215000 },
+    { endsIn: "5h 40m", minBid: 1.2, topBid: 1.75, impressions: 132400 },
+    { endsIn: "14h 05m", minBid: 0.9, topBid: 0.95, impressions: 82000 },
+    { endsIn: "8h 20m", minBid: 0.7, topBid: 1.05, impressions: 98000 },
+    { endsIn: "1d 04h", minBid: 0.55, topBid: 0.72, impressions: 67000 },
+  ];
+
+  const initialAuctions = auctionTemplates.map((item, index) => ({
+    ...item,
+    ...auctionFeatures[index],
+    ethRate: (auctionFeatures[index].topBid * 0.98).toFixed(2),
+  }));
+
   const [auctions, setAuctions] = useState(initialAuctions);
-  const [walletConnected, setWalletConnected] = useState(false);
+  const [walletAddress, setWalletAddress] = useState("");
+  const [chainId, setChainId] = useState("");
   const [connecting, setConnecting] = useState(false);
   const [activeBidAuction, setActiveBidAuction] = useState(null);
   const [bidAmount, setBidAmount] = useState("");
   const [txProcessing, setTxProcessing] = useState(false);
   const [toast, setToast] = useState(null);
 
+  const MONAD_TESTNET_CHAIN_ID = "0x279F";
+  const MONAD_TESTNET_PARAMS = {
+    chainId: MONAD_TESTNET_CHAIN_ID,
+    chainName: "Monad Testnet",
+    nativeCurrency: {
+      name: "Testnet MON Token",
+      symbol: "MON",
+      decimals: 18,
+    },
+    rpcUrls: ["https://testnet-rpc.monad.xyz"],
+    blockExplorerUrls: ["https://testnet.monadexplorer.com"],
+  };
+
+  const isConnected = Boolean(walletAddress);
+  const isCorrectNetwork = chainId === MONAD_TESTNET_CHAIN_ID;
+  const canBid = isConnected && isCorrectNetwork;
+  const displayAddress = walletAddress
+    ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
+    : "Wallet Disconnected";
+  const networkLabel = chainId
+    ? isCorrectNetwork
+      ? "Monad Testnet"
+      : `Wrong network (${chainId})`
+    : "Disconnected";
+
   useEffect(() => {
-    if (toast) {
-      const t = setTimeout(() => setToast(null), 4000);
-      return () => clearTimeout(t);
+    if (typeof window === "undefined") return;
+
+    const handleAccountsChanged = accounts => {
+      if (accounts.length > 0) {
+        setWalletAddress(accounts[0]);
+      } else {
+        setWalletAddress("");
+      }
+    };
+
+    const handleChainChanged = chain => {
+      setChainId(chain);
+    };
+
+    if (window.ethereum) {
+      window.ethereum
+        .request({ method: "eth_chainId" })
+        .then(handleChainChanged)
+        .catch(() => {});
+      window.ethereum.on("accountsChanged", handleAccountsChanged);
+      window.ethereum.on("chainChanged", handleChainChanged);
     }
+
+    return () => {
+      if (window.ethereum?.removeListener) {
+        window.ethereum.removeListener("accountsChanged", handleAccountsChanged);
+        window.ethereum.removeListener("chainChanged", handleChainChanged);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timeout = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(timeout);
   }, [toast]);
 
-  function simulateConnectWallet() {
+  async function ensureMonadTestnet() {
+    if (typeof window === "undefined" || !window.ethereum) return false;
+
+    try {
+      const currentChain = await window.ethereum.request({ method: "eth_chainId" });
+      setChainId(currentChain);
+      if (currentChain === MONAD_TESTNET_CHAIN_ID) {
+        return true;
+      }
+
+      await window.ethereum.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: MONAD_TESTNET_CHAIN_ID }],
+      });
+      setChainId(MONAD_TESTNET_CHAIN_ID);
+      return true;
+    } catch (error) {
+      if (error?.code === 4902 || error?.data?.originalError?.code === 4902) {
+        try {
+          await window.ethereum.request({
+            method: "wallet_addEthereumChain",
+            params: [MONAD_TESTNET_PARAMS],
+          });
+          setChainId(MONAD_TESTNET_CHAIN_ID);
+          return true;
+        } catch (addError) {
+          return false;
+        }
+      }
+      return false;
+    }
+  }
+
+  async function connectWallet() {
+    if (typeof window === "undefined" || !window.ethereum) {
+      setToast({ type: "error", message: "MetaMask not found. Install MetaMask to connect." });
+      return;
+    }
+
     setConnecting(true);
-    setTimeout(() => {
-      setWalletConnected(true);
+    try {
+      const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+      const address = accounts?.[0] ?? "";
+      if (!address) {
+        setToast({ type: "error", message: "No wallet account was returned." });
+        return;
+      }
+
+      const networkOk = await ensureMonadTestnet();
+      if (!networkOk) {
+        setWalletAddress("");
+        setToast({ type: "error", message: "Please switch to Monad Testnet in MetaMask." });
+        return;
+      }
+
+      setWalletAddress(address);
+      setToast({ type: "success", message: "MetaMask connected on Monad Testnet." });
+    } catch (error) {
+      setToast({ type: "error", message: "Wallet connection rejected or failed." });
+    } finally {
       setConnecting(false);
-      setToast({ type: "success", message: "Wallet connected (simulated)" });
-    }, 2000);
+    }
+  }
+
+  function disconnectWallet() {
+    setWalletAddress("");
+    setToast({ type: "info", message: "MetaMask disconnected." });
   }
 
   function openBidModal(auction) {
+    if (!isConnected) {
+      setToast({ type: "error", message: "Please connect your MetaMask wallet first to place a bid." });
+      return;
+    }
+    if (!isCorrectNetwork) {
+      setToast({ type: "error", message: "Switch MetaMask to Monad Testnet to place bids." });
+      return;
+    }
     setActiveBidAuction(auction);
     setBidAmount(String((auction.topBid + 0.1).toFixed(2)));
   }
@@ -45,14 +186,14 @@ export default function Dashboard() {
   }
 
   function submitBid() {
-    if (!walletConnected) {
-      setToast({ type: "error", message: "Please connect your wallet first" });
+    if (!isConnected) {
+      setToast({ type: "error", message: "Please connect your MetaMask wallet first to place a bid." });
       return;
     }
 
     const amount = parseFloat(bidAmount);
     if (isNaN(amount) || amount <= activeBidAuction.topBid) {
-      setToast({ type: "error", message: "Enter a valid bid higher than the top bid" });
+      setToast({ type: "error", message: "Enter a valid bid higher than the top bid." });
       return;
     }
 
@@ -61,36 +202,38 @@ export default function Dashboard() {
       setTxProcessing(false);
       setAuctions(prev => prev.map(a => (a.id === activeBidAuction.id ? { ...a, topBid: amount } : a)));
       closeBidModal();
-      setToast({ type: "success", message: "Bid confirmed on Monad (simulated)" });
+      setToast({ type: "success", message: "Bid confirmed on Monad (simulated)." });
     }, 3500);
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#001f3f] via-[#00122a] to-black text-slate-100">
-      <header className="max-w-6xl mx-auto px-6 py-8 flex items-center justify-between">
+      <header className="max-w-6xl mx-auto px-6 py-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <Link href="/" className="text-lg font-semibold text-slate-200 hover:opacity-90">
           ← Back
         </Link>
 
-        <div className="flex items-center gap-4">
-          <div className="text-sm text-slate-400 mr-4">CleanBoard · Dashboard</div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="rounded-full bg-slate-900/80 px-3 py-2 text-sm font-medium text-slate-200 ring-1 ring-white/10">
+            {displayAddress}
+          </div>
 
           <button
+            type="button"
             onClick={() => {
-              if (walletConnected) {
-                setWalletConnected(false);
-                setToast({ type: "info", message: "Wallet disconnected (simulated)" });
+              if (isConnected) {
+                disconnectWallet();
               } else {
-                simulateConnectWallet();
+                connectWallet();
               }
             }}
             className={`px-4 py-2 rounded-md font-medium transition ${
-              walletConnected
+              isConnected
                 ? "bg-emerald-600 hover:bg-emerald-500"
                 : "bg-indigo-600 hover:bg-indigo-500"
             }`}
           >
-            {connecting ? "Connecting..." : walletConnected ? "Disconnect Wallet" : "Connect Wallet"}
+            {connecting ? "Connecting..." : isConnected ? "Disconnect Wallet" : "Connect Wallet"}
           </button>
         </div>
       </header>
@@ -98,39 +241,60 @@ export default function Dashboard() {
       <main className="max-w-6xl mx-auto px-6 pb-20">
         <section className="text-center pt-6 pb-10">
           <h2 className="text-4xl font-bold">Live Auctions</h2>
-          <p className="mt-3 text-slate-400">Place bids on premium billboard slots across the Monad Network (simulated).</p>
+          <p className="mt-3 text-slate-400">
+            Place bids on premium billboard slots across the Monad Network with unique science, art, and urban placements.
+          </p>
         </section>
 
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {auctions.map(auction => (
             <div key={auction.id} className="bg-white/3 border border-white/5 rounded-xl p-5">
-              <h3 className="text-xl font-semibold">{auction.title}</h3>
-              <p className="mt-2 text-sm text-slate-300">Ends in: {auction.endsIn}</p>
-
-              <div className="mt-4 flex items-center justify-between">
+              <div className="flex items-center justify-between gap-3">
                 <div>
-                  <div className="text-xs text-slate-400">Top Bid</div>
-                  <div className="text-lg font-medium">{auction.topBid} MON</div>
+                  <h3 className="text-xl font-semibold">{auction.title}</h3>
+                  <p className="mt-1 text-sm text-slate-400">{auction.category}</p>
                 </div>
+                <span className="rounded-full bg-slate-800 px-3 py-1 text-xs uppercase tracking-[0.18em] text-slate-300">
+                  {auction.endsIn}
+                </span>
+              </div>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => openBidModal(auction)}
-                    disabled={!walletConnected}
-                    className={`px-4 py-2 rounded-md font-semibold transition ${
-                      walletConnected
-                        ? "bg-violet-600 hover:bg-violet-500 text-white"
-                        : "bg-slate-700 text-slate-400 cursor-not-allowed"
-                    }`}
-                    title={!walletConnected ? "Connect wallet to place a bid" : `Place bid on ${auction.title}`}
-                  >
-                    Place Bid
-                  </button>
+              <div className="mt-5 grid gap-3 text-sm text-slate-300">
+                <div className="flex items-center justify-between rounded-2xl bg-slate-900/80 px-4 py-3">
+                  <span className="text-slate-400">Top Bid</span>
+                  <span className="font-semibold text-white">{auction.topBid} MON</span>
+                </div>
+                <div className="flex items-center justify-between rounded-2xl bg-slate-900/80 px-4 py-3">
+                  <span className="text-slate-400">Min Bid</span>
+                  <span className="font-semibold text-white">{auction.minBid} MON</span>
+                </div>
+                <div className="flex items-center justify-between rounded-2xl bg-slate-900/80 px-4 py-3">
+                  <span className="text-slate-400">Impressions</span>
+                  <span className="font-semibold text-white">{auction.impressions.toLocaleString()}</span>
                 </div>
               </div>
 
-              {!walletConnected && (
-                <div className="mt-3 text-xs text-amber-300">Please connect your wallet to enable bidding.</div>
+              <div className="mt-5 flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => openBidModal(auction)}
+                  disabled={!canBid}
+                  className={`px-4 py-2 rounded-md font-semibold transition ${
+                    canBid
+                      ? "bg-violet-600 hover:bg-violet-500 text-white"
+                      : "bg-slate-700 text-slate-400 cursor-not-allowed"
+                  }`}
+                >
+                  Place Bid
+                </button>
+              </div>
+
+              {!canBid && (
+                <div className="mt-3 text-xs text-amber-300">
+                  {isConnected
+                    ? "Switch to Monad Testnet to place bids."
+                    : "Please connect your MetaMask wallet first to place a bid."}
+                </div>
               )}
             </div>
           ))}
@@ -159,6 +323,7 @@ export default function Dashboard() {
 
             <div className="mt-6 flex items-center justify-end gap-3">
               <button
+                type="button"
                 onClick={closeBidModal}
                 className="px-4 py-2 rounded-md bg-transparent border border-white/6 text-slate-300 hover:bg-white/2"
                 disabled={txProcessing}
@@ -167,6 +332,7 @@ export default function Dashboard() {
               </button>
 
               <button
+                type="button"
                 onClick={submitBid}
                 disabled={txProcessing}
                 className={`px-4 py-2 rounded-md font-semibold ${

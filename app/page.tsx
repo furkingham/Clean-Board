@@ -23,10 +23,8 @@ export default function LandingPage() {
         <p className={`mt-4 max-w-2xl mx-auto text-sm text-slate-400 ${entered ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'} transition-all duration-900 delay-250`}>Bid on premium billboard inventory, upload creatives, and preview live placements — all secured on the Monad Testnet.</p>
 
         <div className={`mt-12 ${entered ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'} transition-all duration-1000 delay-350`}>
-          <Link href="/app">
-            <a className="inline-block rounded-full bg-gradient-to-r from-violet-500 to-cyan-400 px-10 py-4 text-lg font-semibold text-black shadow-2xl shadow-cyan-500/30 hover:scale-[1.02] transition-transform">
-              Go to App
-            </a>
+          <Link href="/app" className="inline-block rounded-full bg-gradient-to-r from-violet-500 to-cyan-400 px-10 py-4 text-lg font-semibold text-black shadow-2xl shadow-cyan-500/30 hover:scale-[1.02] transition-transform">
+            Go to App
           </Link>
         </div>
       </div>

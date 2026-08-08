@@ -4,45 +4,19 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-gradient-to-b from-[#001f3f] via-[#00122a] to-black flex items-center justify-center">
-      <div className="w-full max-w-4xl px-6 py-32 text-center">
-        <div className="mx-auto max-w-2xl">
-          <h1 className="text-6xl sm:text-7xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-sky-400 to-indigo-500">
+    <main className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
+      <div className="w-full max-w-4xl px-6 py-28 text-center">
+        <div className="rounded-[2rem] border border-white/10 bg-slate-900/80 p-14 shadow-[0_40px_120px_rgba(0,0,0,0.45)] backdrop-blur-xl">
+          <h1 className="text-5xl sm:text-6xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-fuchsia-400 to-purple-500">
             CleanBoard
           </h1>
-
           <p className="mt-6 text-lg sm:text-xl text-slate-300">
-            Decentralized Advertising, Redefined. Bid, Place, and Broadcast on the Monad Network.
+            Decentralized Advertising, Redefined. Bid, place, and broadcast your digital campaigns securely on-chain.
           </p>
-
-          <div className="mt-10 flex justify-center gap-4">
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center gap-3 px-6 py-3 rounded-md bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-semibold shadow-2xl transition-transform focus:outline-none focus:ring-2 focus:ring-indigo-400"
-              aria-label="Go to Dashboard"
-            >
+          <div className="mt-10">
+            <Link href="/dashboard" className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-violet-600 via-fuchsia-600 to-purple-700 px-8 py-4 text-base font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-violet-400">
               Go to App
             </Link>
-
-            <a
-              href="https://github.com/furkingham/Clean-Board"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-md bg-transparent border border-slate-700 hover:bg-slate-800 text-slate-300 transition"
-            >
-              View Repo
-            </a>
-          </div>
-
-          <div className="mt-12">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 text-xs text-slate-300">
-              <svg className="w-4 h-4 text-cyan-300" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-                <path d="M12 2v6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M6 8l6 4 6-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M6 16l6 4 6-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              <span>Monad Testnet · Simulated bidding UI</span>
-            </div>
           </div>
         </div>
       </div>

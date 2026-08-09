@@ -39,12 +39,14 @@ const MONAD_TESTNET_PARAMS = {
   blockExplorerUrls: ["https://testnet.monadexplorer.com"],
 };
 
+const MINT = '#10b981'
+
 const AUCTION_TEMPLATES = [
-  { id: 1, title: "Times Square Billboard", category: "Urban Out-Of-Home" },
-  { id: 2, title: "Downtown LED Wall", category: "City Center Display" },
-  { id: 3, title: "Mall Atrium Display", category: "Retail Footfall" },
-  { id: 4, title: "Science Journal Sidebar Banner", category: "Science Media" },
-  { id: 5, title: "Art Gallery Top Banner", category: "Arts & Culture" },
+  { id: 1, title: "Sports Platform Right Banner", category: "Digital Web Ad" },
+  { id: 2, title: "Tech Blog Top Banner", category: "Digital Web Ad" },
+  { id: 3, title: "Magazine Left Banner", category: "Digital Web Ad" },
+  { id: 4, title: "Science Journal Sidebar Banner", category: "Digital Web Ad" },
+  { id: 5, title: "Art Gallery Top Banner", category: "Digital Web Ad" },
 ];
 
 const AUCTION_FEATURES = [
@@ -60,7 +62,16 @@ const getInitialAuctions = () =>
     ...item,
     ...AUCTION_FEATURES[index],
     ethRate: (AUCTION_FEATURES[index].topBid * 0.98).toFixed(2),
+    // use fixed abstract placeholder image for stable visuals
+    imageUrl: `https://placehold.co/400x200/0a0a0a/10b981?text=Digital+Ad+Space`,
   }));
+
+function formatImpressions(n) {
+  if (!n) return '0 impressions';
+  if (n >= 1000000) return `${Math.round(n / 1000000)}M+ impressions`;
+  if (n >= 1000) return `${Math.round(n / 1000)}K+ impressions`;
+  return `${n} impressions`;
+}
 
 // ===== WALLET SELECTOR MODAL =====
 function WalletSelectorModal({ onSelect, onClose }) {
@@ -131,6 +142,17 @@ export default function Dashboard() {
   const [bidAmount, setBidAmount] = useState("");
   const [txProcessing, setTxProcessing] = useState(false);
   const [toast, setToast] = useState(null);
+
+  // Open wallet selector if page was navigated with #connect (Navbar link)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.location.hash === '#connect') {
+      setShowWalletSelector(true);
+      try {
+        history.replaceState(null, '', window.location.pathname);
+      } catch (e) {}
+    }
+  }, []);
 
   // ===== DERIVED STATE =====
   const isConnected = useMemo(() => Boolean(walletAddress), [walletAddress]);
@@ -351,19 +373,18 @@ export default function Dashboard() {
   }, [isConnected, bidAmount, activeBidAuction, closeBidModal]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#001f3f] via-[#00122a] to-black text-slate-100">
-      <header className="max-w-6xl mx-auto px-6 py-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="relative min-h-screen text-slate-100" style={{ backgroundColor: '#0a0a0a' }}>
+      <div aria-hidden className="absolute inset-0 -z-10 opacity-30" style={{ backgroundImage: `repeating-linear-gradient(transparent, transparent 23px, rgba(255,255,255,0.02) 24px), repeating-linear-gradient(90deg, transparent, transparent 23px, rgba(255,255,255,0.02) 24px)`, backgroundColor: '#0a0a0a' }} />
+
+      <header className="max-w-6xl mx-auto px-6 py-8 flex items-center justify-between">
         <Link href="/" className="text-lg font-semibold text-slate-200 hover:opacity-90">
           ← Back
         </Link>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          {/* Wallet badge – show wallet type icon when connected */}
+        <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 rounded-full bg-slate-900/80 px-3 py-2 text-sm font-medium text-slate-200 ring-1 ring-white/10">
             {isConnected && (
-              <span style={{ fontSize: "1rem" }}>
-                {walletType === "phantom" ? "👻" : "🦊"}
-              </span>
+              <span style={{ fontSize: '1rem' }}>{walletType === 'phantom' ? '👻' : '🦊'}</span>
             )}
             {displayAddress}
           </div>
@@ -372,13 +393,10 @@ export default function Dashboard() {
             id="wallet-connect-btn"
             type="button"
             onClick={isConnected ? disconnectWallet : () => setShowWalletSelector(true)}
-            className={`px-4 py-2 rounded-md font-medium transition ${
-              isConnected
-                ? "bg-emerald-600 hover:bg-emerald-500"
-                : "bg-indigo-600 hover:bg-indigo-500"
-            }`}
+            className={`px-4 py-2 rounded-md font-medium transition`}
+            style={ isConnected ? { background: '#0bf0a5', color: '#071827', boxShadow: '0 8px 30px rgba(16,185,129,0.18)' } : { background: 'linear-gradient(90deg,#0bf0a5,#10b981)', color: '#071827', boxShadow: '0 8px 30px rgba(16,185,129,0.18)' } }
           >
-            {connecting ? "Connecting..." : isConnected ? "Disconnect Wallet" : "Connect Wallet"}
+            {connecting ? 'Connecting...' : isConnected ? 'Disconnect Wallet' : 'Connect Wallet'}
           </button>
         </div>
       </header>
@@ -393,52 +411,50 @@ export default function Dashboard() {
 
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {auctions.map(auction => (
-            <div key={auction.id} className="bg-white/3 border border-white/5 rounded-xl p-5">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-xl font-semibold">{auction.title}</h3>
-                  <p className="mt-1 text-sm text-slate-400">{auction.category}</p>
-                </div>
-                <span className="rounded-full bg-slate-800 px-3 py-1 text-xs uppercase tracking-[0.18em] text-slate-300">
-                  {auction.endsIn}
-                </span>
-              </div>
+            <div key={auction.id} className="bg-[#0a0a0a] border border-white/6 rounded-xl p-0 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+              {/* Image cover fixed to placeholder */}
+              <img src="https://placehold.co/400x200/0a0a0a/10b981?text=Digital+Ad+Space" alt={`${auction.title} visual`} className="w-full h-40 object-cover" />
 
-              <div className="mt-5 grid gap-3 text-sm text-slate-300">
-                <div className="flex items-center justify-between rounded-2xl bg-slate-900/80 px-4 py-3">
-                  <span className="text-slate-400">Top Bid</span>
-                  <span className="font-semibold text-white">{auction.topBid} MON</span>
+              <div className="p-6">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-lg sm:text-xl md:text-2xl font-semibold tracking-tight text-white">{auction.title}</h3>
                 </div>
-                <div className="flex items-center justify-between rounded-2xl bg-slate-900/80 px-4 py-3">
-                  <span className="text-slate-400">Min Bid</span>
-                  <span className="font-semibold text-white">{auction.minBid} MON</span>
-                </div>
-                <div className="flex items-center justify-between rounded-2xl bg-slate-900/80 px-4 py-3">
-                  <span className="text-slate-400">Impressions</span>
-                  <span className="font-semibold text-white">{auction.impressions.toLocaleString()}</span>
-                </div>
-              </div>
 
-              <div className="mt-5 flex items-center justify-between">
-                <button
-                  type="button"
-                  onClick={() => openBidModal(auction)}
-                  disabled={!canBid}
-                  className={`px-4 py-2 rounded-md font-semibold transition ${
-                    canBid
-                      ? "bg-violet-600 hover:bg-violet-500 text-white"
-                      : "bg-slate-700 text-slate-400 cursor-not-allowed"
-                  }`}
-                >
-                  Place Bid
-                </button>
-              </div>
+                <div className="mt-4 grid gap-3 text-sm text-slate-300">
+                  <div className="flex items-center justify-between rounded-2xl bg-[#071827] px-5 py-4">
+                    <div className="text-slate-400 text-xs">Current/Min Bid (MON)</div>
+                    <div className="font-semibold text-white text-base">{auction.topBid} / {auction.minBid}</div>
+                  </div>
 
-              {!isConnected && (
-                <div className="mt-3 text-xs text-amber-300">
-                  Please connect your wallet first to place a bid.
+                  <div className="flex items-center justify-between rounded-2xl bg-[#071827] px-5 py-4">
+                    <div className="text-slate-400 text-xs">Time Left</div>
+                    <div className="font-semibold text-white text-base" style={{ color: MINT }}>{auction.endsIn}</div>
+                  </div>
+
+                  <div className="flex items-center justify-between rounded-2xl bg-[#071827] px-5 py-3">
+                    <div className="text-slate-400 text-xs">Impressions</div>
+                    <div className="font-semibold text-white text-sm">{formatImpressions(auction.impressions)}</div>
+                  </div>
                 </div>
-              )}
+
+                <div className="mt-6 flex items-center justify-center">
+                  <button
+                    type="button"
+                    onClick={() => openBidModal(auction)}
+                    disabled={!canBid}
+                    className={`px-6 py-2 rounded-md font-semibold transition`}
+                    style={ canBid ? { background: '#10b981', color: '#071827', boxShadow: '0 8px 30px rgba(16,185,129,0.18)' } : { background: '#0f1720', color: '#94a3b8' } }
+                  >
+                    Place Bid
+                  </button>
+                </div>
+
+                {!isConnected && (
+                  <div className="mt-3 text-xs text-amber-300">
+                    Please connect your wallet first to place a bid.
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </section>

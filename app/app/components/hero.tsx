@@ -5,7 +5,9 @@ import { ArrowRight } from 'lucide-react'
 
 export function Hero() {
   return (
-    <section className="relative w-full h-full flex items-center justify-center bg-gradient-to-b from-background via-background/80 to-background overflow-hidden px-6">
+    <section className="relative w-full min-h-[72vh] flex items-center justify-center overflow-hidden px-6 py-20" style={{ backgroundColor: '#0a0a0a' }}>
+      {/* subtle grid overlay for technical/blockchain feel */}
+      <div aria-hidden className="absolute inset-0 -z-10 opacity-30" style={{ backgroundImage: `repeating-linear-gradient(transparent, transparent 23px, rgba(255,255,255,0.02) 24px), repeating-linear-gradient(90deg, transparent, transparent 23px, rgba(255,255,255,0.02) 24px)` }} />
       {/* Animated background elements */}
       <motion.div
         className="absolute inset-0"
@@ -19,29 +21,22 @@ export function Hero() {
 
       {/* Content */}
       <motion.div
-        className="relative z-10 max-w-2xl text-center"
+        className="relative z-10 max-w-3xl text-center px-6 py-20"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.2 }}
       >
-        <h1 className="text-5xl md:text-6xl font-bold tracking-tight">
-          Premium Ad Auctions
-          <br />
-          on Blockchain
+        <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: '#10b981' }}>● VERIFIED AD SPACES. CLEAN REVENUE.</p>
+
+        <h1 className="mx-auto text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-tight max-w-2xl text-white">
+          Tokenized RWA Ad Spaces. <span style={{ color: '#10b981' }}>On-Chain Bidding.</span>
         </h1>
-        <p className="mt-6 text-lg text-muted-foreground leading-relaxed">
-          Bid on exclusive billboard placements across the Monad Network. Transparent,
-          instant settlements with institutional-grade infrastructure.
-        </p>
-        <motion.a
-          href="/dashboard"
-          className="mt-8 inline-flex items-center gap-2 px-8 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          Explore Auctions
-          <ArrowRight className="w-5 h-5" />
-        </motion.a>
+
+        <div className="mt-8">
+          <a href="/dashboard" className="inline-block px-6 py-3 rounded-full font-semibold text-black" style={{ background: '#10b981', boxShadow: '0 8px 30px rgba(16,185,129,0.18)' }}>
+            Explore Auctions
+          </a>
+        </div>
       </motion.div>
     </section>
   )

@@ -2,8 +2,6 @@
 
 import { motion } from 'motion/react'
 
-const partners = ['Cleanverse', 'Monad Testnet', 'CVI', 'CVA']
-
 export function TrustBanner() {
   return (
     <motion.section
@@ -28,8 +26,13 @@ export function TrustBanner() {
         >
           Powered by Institutional Grade Infrastructure
         </p>
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-x-12 gap-y-6">
-          {partners.map((name) => (
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-x-12 gap-y-8">
+          
+          <img src="/cleanverse-logo.png" alt="Cleanverse" className="h-20 md:h-24 w-auto object-contain opacity-90 hover:opacity-100 transition-opacity duration-200" />
+          
+          <img src="/monad-logo.png" alt="Monad" className="h-20 md:h-24 w-auto object-contain opacity-90 hover:opacity-100 transition-opacity duration-200" />
+
+          {['CVI', 'CVA'].map((name) => (
             /* Brightened white partner text with hover glow effects */
             <span
               key={name}

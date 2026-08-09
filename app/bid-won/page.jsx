@@ -1,24 +1,123 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import confetti from "canvas-confetti";
+import { motion } from "motion/react";
+
 export default function BidWon() {
+  const [monadParticles, setMonadParticles] = useState([]);
+
+  useEffect(() => {
+    // 1. Standard Confetti (Neon turquoise, Green, Monad Purple)
+    const duration = 3500;
+    const end = Date.now() + duration;
+    const colors = ['#2dd4bf', '#10b981', '#8b5cf6'];
+
+    (function frame() {
+      // Left side explosion
+      confetti({
+        particleCount: 4,
+        angle: 60,
+        spread: 60,
+        origin: { x: 0.35, y: 0.45 },
+        colors: colors,
+        zIndex: 9999,
+        startVelocity: 25,
+      });
+      // Right side explosion
+      confetti({
+        particleCount: 4,
+        angle: 120,
+        spread: 60,
+        origin: { x: 0.65, y: 0.45 },
+        colors: colors,
+        zIndex: 9999,
+        startVelocity: 25,
+      });
+
+      if (Date.now() < end) {
+        requestAnimationFrame(frame);
+      }
+    }());
+
+    // 2. Custom Monad Logo Particles
+    const particles = Array.from({ length: 45 }).map((_, i) => {
+      const angle = Math.random() * Math.PI * 2; 
+      const distance = Math.random() * 600 - 300; // X spread
+      return {
+        id: i,
+        endX: distance,
+        rotate: Math.random() * 720 - 360,
+        scale: Math.random() * 0.6 + 0.4, // Size variation
+        delay: Math.random() * 0.4, // Staggered start
+        duration: Math.random() * 1.5 + 2.5 // Falling duration
+      };
+    });
+    setMonadParticles(particles);
+
+    const cleanup = setTimeout(() => {
+      setMonadParticles([]);
+    }, 4500);
+
+    return () => clearTimeout(cleanup);
+  }, []);
+
   return (
     <div
       style={{
         position: "fixed",
         inset: 0,
-        zIndex: 9999,
+        zIndex: 9990,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         background: "linear-gradient(to bottom, #01140d, #000a06, #000000)",
       }}
     >
+      {/* Monad Custom Confetti Layer (Pointer Events None) */}
+      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 9998, overflow: 'hidden' }}>
+        {monadParticles.map(p => (
+          <motion.img
+            key={p.id}
+            src="/monad-logo.png"
+            alt=""
+            initial={{ 
+              x: "50vw", 
+              y: "40vh", // Start from middle
+              scale: 0,
+              rotate: 0,
+              opacity: 1
+            }}
+            animate={{ 
+              x: `calc(50vw + ${p.endX}px)`, 
+              y: "120vh", // Fall below screen
+              scale: p.scale,
+              rotate: p.rotate + (Math.random() > 0.5 ? 720 : -720),
+            }}
+            transition={{ 
+              duration: p.duration, 
+              ease: [0.35, 0, 0.75, 1], // Accelerate downwards (gravity-like)
+              delay: p.delay 
+            }}
+            style={{
+              position: 'absolute',
+              width: 32,
+              height: 32,
+              objectFit: 'contain',
+              marginLeft: -16,
+              marginTop: -16
+            }}
+          />
+        ))}
+      </div>
+
       <div
         style={{
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           gap: "2.5rem",
+          zIndex: 9995
         }}
       >
         {/* Glowing checkmark */}

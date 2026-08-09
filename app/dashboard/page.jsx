@@ -58,13 +58,21 @@ const AUCTION_FEATURES = [
 ];
 
 const getInitialAuctions = () =>
-  AUCTION_TEMPLATES.map((item, index) => ({
-    ...item,
-    ...AUCTION_FEATURES[index],
-    ethRate: (AUCTION_FEATURES[index].topBid * 0.98).toFixed(2),
-    // use fixed abstract placeholder image for stable visuals
-    imageUrl: `https://placehold.co/400x200/0a0a0a/10b981?text=Digital+Ad+Space`,
-  }));
+  AUCTION_TEMPLATES.map((item, index) => {
+    let imageUrl = `https://placehold.co/400x200/0a0a0a/10b981?text=Digital+Ad+Space`;
+    if (item.title === "Sports Platform Right Banner") imageUrl = "/sports-mockup.png";
+    else if (item.title === "Tech Blog Top Banner") imageUrl = "/tech-mockup.png";
+    else if (item.title === "Magazine Left Banner") imageUrl = "/magazine-mockup.png";
+    else if (item.title === "Science Journal Sidebar Banner") imageUrl = "/science-mockup.png";
+    else if (item.title === "Art Gallery Top Banner") imageUrl = "/art-mockup.png";
+    
+    return {
+      ...item,
+      ...AUCTION_FEATURES[index],
+      ethRate: (AUCTION_FEATURES[index].topBid * 0.98).toFixed(2),
+      imageUrl,
+    };
+  });
 
 function formatImpressions(n) {
   if (!n) return '0 impressions';
@@ -422,13 +430,14 @@ export default function Dashboard() {
           </p>
         </section>
 
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pt-12">
           {auctions.map(auction => (
-            <div key={auction.id} className="bg-[#0a0a0a] border border-white/6 rounded-xl p-0 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-              {/* Image cover fixed to placeholder */}
-              <img src="https://placehold.co/400x200/0a0a0a/10b981?text=Digital+Ad+Space" alt={`${auction.title} visual`} className="w-full h-40 object-cover" />
+            <div key={auction.id} className="bg-[#0a0a0a] rounded-xl p-0 transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-[0_0_40px_rgba(45,212,191,0.3)] mt-8 relative">
+              
+              {/* Out-of-box image effect */}
+              <img src={auction.imageUrl} alt={`${auction.title} visual`} className="relative z-10 -mt-10 w-11/12 mx-auto h-40 md:h-48 object-cover rounded-xl shadow-[0_15px_30px_rgba(0,0,0,0.6)]" />
 
-              <div className="p-6">
+              <div className="p-6 pt-8">
                 <div className="flex items-center justify-between gap-3">
                   <h3 className="text-lg sm:text-xl md:text-2xl font-semibold tracking-tight text-white">{auction.title}</h3>
                 </div>

@@ -361,15 +361,12 @@ export default function Dashboard() {
       return;
     }
 
-    setTxProcessing(true);
-    setTimeout(() => {
-      setTxProcessing(false);
-      setAuctions((prev) =>
-        prev.map((a) => (a.id === activeBidAuction.id ? { ...a, topBid: amount } : a))
-      );
-      closeBidModal();
-      setToast({ type: "success", message: "Bid confirmed on Monad (simulated)." });
-    }, 3500);
+    // Update auction data then hard-navigate to the processing page
+    setAuctions((prev) =>
+      prev.map((a) => (a.id === activeBidAuction.id ? { ...a, topBid: amount } : a))
+    );
+    closeBidModal();
+    window.location.href = "/bid-processing";
   }, [isConnected, bidAmount, activeBidAuction, closeBidModal]);
 
   return (
@@ -498,7 +495,6 @@ export default function Dashboard() {
                 type="button"
                 onClick={closeBidModal}
                 className="px-4 py-2 rounded-md bg-transparent border border-white/6 text-slate-300 hover:bg-white/2"
-                disabled={txProcessing}
               >
                 Cancel
               </button>
@@ -506,31 +502,17 @@ export default function Dashboard() {
               <button
                 type="button"
                 onClick={submitBid}
-                disabled={txProcessing}
-                className={`px-4 py-2 rounded-md font-semibold ${
-                  txProcessing ? "bg-slate-600 text-slate-300 cursor-wait" : "bg-emerald-600 hover:bg-emerald-500 text-white"
-                }`}
+                className="px-4 py-2 rounded-md font-semibold bg-emerald-600 hover:bg-emerald-500 text-white"
               >
-                {txProcessing ? "Processing..." : "Confirm Bid"}
+                Confirm Bid
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* TX Processing Overlay */}
-      {txProcessing && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center pointer-events-none">
-          <div className="absolute inset-0 bg-black/60" />
-          <div className="relative z-70 bg-[#071827] border border-white/6 rounded-lg px-6 py-4 flex items-center gap-4">
-            <div className="w-8 h-8 border-4 border-t-transparent border-white rounded-full animate-spin" />
-            <div>
-              <div className="text-sm font-medium">Confirming Transaction...</div>
-              <div className="text-xs text-slate-400">This simulates blockchain confirmation on Monad Testnet.</div>
-            </div>
-          </div>
-        </div>
-      )}
+
+
 
       {/* Toast */}
       {toast && (

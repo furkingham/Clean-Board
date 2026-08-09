@@ -58,3 +58,20 @@ button, input, textarea, select {
 .delay-150 { transition-delay: 150ms; }
 .delay-250 { transition-delay: 250ms; }
 .delay-350 { transition-delay: 350ms; }
+
+/* ── Keyframes used by bid processing overlay (inline styles) ── */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateY(-6px);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}

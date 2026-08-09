@@ -5,7 +5,7 @@ import { ArrowRight } from 'lucide-react'
 
 export function Hero() {
   return (
-    <section className="relative w-full min-h-[78vh] flex items-center justify-center overflow-hidden px-6 py-20" style={{ backgroundColor: '#0a0a0a' }}>
+    <section className="relative w-full min-h-[78vh] flex items-center justify-center overflow-hidden px-6 pt-28 pb-16" style={{ backgroundColor: '#0a0a0a' }}>
       {/* subtle grid overlay for technical/blockchain feel */}
       <div aria-hidden className="absolute inset-0 -z-10 opacity-30" style={{ backgroundImage: `repeating-linear-gradient(transparent, transparent 23px, rgba(255,255,255,0.02) 24px), repeating-linear-gradient(90deg, transparent, transparent 23px, rgba(255,255,255,0.02) 24px)` }} />
       {/* Animated background elements */}
@@ -21,14 +21,14 @@ export function Hero() {
 
       {/* Content */}
       <motion.div
-        className="relative z-10 max-w-3xl text-center px-6 py-20"
+        className="relative z-10 w-full max-w-3xl text-center px-4 sm:px-6 py-20"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.2 }}
       >
         <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: '#10b981' }}>● VERIFIED AD SPACES. CLEAN REVENUE.</p>
 
-        <h1 className="mx-auto text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-tight max-w-2xl text-white">
+        <h1 className="w-full mx-auto text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-tight max-w-2xl text-white">
           Tokenized RWA Ad Spaces. <span style={{ color: '#10b981' }}>On-Chain Bidding.</span>
         </h1>
 

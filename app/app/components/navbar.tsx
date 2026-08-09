@@ -4,8 +4,6 @@ import { useState, useEffect } from 'react'
 import { motion } from 'motion/react'
 import { BadgeCheck, LogOut, ChevronDown } from 'lucide-react'
 
-const links = ['Auctions', 'RWA Ecosystem', 'Compliance']
-
 // ── Cleanverse API ──────────────────────────────────────────────────
 const CLEANVERSE_API_KEY = 'qhfPE24VqLv7wTK7AXMkD4p2i7zKnerg84AtT0IGto0='
 
@@ -57,15 +55,10 @@ export function Navbar() {
 
         {/* Logo */}
         <a href="#" className="flex shrink-0 items-center" aria-label="CleanBoard home">
-          <img src="/logo.png" alt="CleanBoard" className="h-44 w-auto object-contain" style={{ maxHeight: '170px' }} />
+          <img src="/logo.png" alt="CleanBoard" className="h-12 w-auto object-contain" style={{ maxHeight: '48px' }} />
         </a>
 
-        {/* Links */}
-        <div className="hidden items-center gap-8 md:flex">
-          {links.map(l => (
-            <a key={l} href="#" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">{l}</a>
-          ))}
-        </div>
+
 
         {/* Right side */}
         <div className="flex items-center gap-3">

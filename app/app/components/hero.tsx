@@ -5,7 +5,7 @@ import { ArrowRight } from 'lucide-react'
 
 export function Hero() {
   return (
-    <section className="relative w-full min-h-[72vh] flex items-center justify-center overflow-hidden px-6 py-20" style={{ backgroundColor: '#0a0a0a' }}>
+    <section className="relative w-full min-h-[78vh] flex items-center justify-center overflow-hidden px-6 py-20" style={{ backgroundColor: '#0a0a0a' }}>
       {/* subtle grid overlay for technical/blockchain feel */}
       <div aria-hidden className="absolute inset-0 -z-10 opacity-30" style={{ backgroundImage: `repeating-linear-gradient(transparent, transparent 23px, rgba(255,255,255,0.02) 24px), repeating-linear-gradient(90deg, transparent, transparent 23px, rgba(255,255,255,0.02) 24px)` }} />
       {/* Animated background elements */}

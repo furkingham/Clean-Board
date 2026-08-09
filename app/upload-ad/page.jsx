@@ -39,7 +39,7 @@ export default function UploadAd() {
   return (
     <div style={{
       minHeight: "100vh",
-      background: "linear-gradient(to bottom, #001428, #000d1f, #000000)",
+      background: "linear-gradient(to bottom, #01140d, #000a06, #000000)",
       display: "flex",
       flexDirection: "column",
       alignItems: "center",

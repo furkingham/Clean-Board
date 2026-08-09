@@ -49,7 +49,7 @@ export default function AdPreview() {
 
       {/* ── Mock Browser Chrome ── */}
       <div style={{
-        background: "#1e2533",
+        background: "#122017",
         padding: "0.6rem 1rem",
         display: "flex",
         alignItems: "center",
@@ -198,7 +198,7 @@ export default function AdPreview() {
             marginBottom: "1.25rem",
             border: "1px solid #e5e7eb",
           }}>
-            <div style={{ height: 200, background: "linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ height: 200, background: "linear-gradient(135deg, #020c08 0%, #072a1b 100%)", display: "flex", alignItems: "center", justifyValue: "center", justifyContent: "center" }}>
               <span style={{ color: "rgba(255,255,255,0.2)", fontSize: "3rem" }}>📰</span>
             </div>
             <div style={{ padding: "1.25rem" }}>
@@ -319,7 +319,7 @@ export default function AdPreview() {
         bottom: 0,
         left: 0,
         right: 0,
-        background: "rgba(15,23,42,0.95)",
+        background: "rgba(3,18,11,0.96)",
         backdropFilter: "blur(12px)",
         borderTop: "1px solid rgba(255,255,255,0.08)",
         padding: "0.85rem 2rem",

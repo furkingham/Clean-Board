@@ -1,7 +1,6 @@
 import { Navbar } from '@/components/navbar'
 import { Hero } from '@/components/hero'
 import { TrustBanner } from '@/components/trust-banner'
-import Dashboard from '@/dashboard/page'
 
 export default function Page() {
   return (
@@ -9,7 +8,6 @@ export default function Page() {
       <Navbar />
       <Hero />
       <TrustBanner />
-      <Dashboard />
     </main>
   )
 }

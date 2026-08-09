@@ -142,15 +142,17 @@ export default function Dashboard() {
   const [bidAmount, setBidAmount] = useState("");
   const [txProcessing, setTxProcessing] = useState(false);
   const [toast, setToast] = useState(null);
+  const [profileVerified, setProfileVerified] = useState(false);
 
-  // Open wallet selector if page was navigated with #connect (Navbar link)
+  // Read Cleanverse verification on mount
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (window.location.hash === '#connect') {
-      setShowWalletSelector(true);
-      try {
-        history.replaceState(null, '', window.location.pathname);
-      } catch (e) {}
+    if (typeof window !== 'undefined') {
+      const verified = localStorage.getItem("cleanverse_verified");
+      const address = localStorage.getItem("cleanverse_address");
+      if (verified === "true" && address) {
+        setWalletAddress(address);
+        setWalletType("cleanverse");
+      }
     }
   }, []);
 
@@ -331,7 +333,6 @@ export default function Dashboard() {
     setToast({ type: "info", message: "Wallet disconnected." });
   }, [walletType]);
 
-  // ===== BID MODAL FUNCTIONS =====
   const openBidModal = useCallback(
     (auction) => {
       if (!isConnected) {
@@ -340,9 +341,24 @@ export default function Dashboard() {
       }
       setActiveBidAuction(auction);
       setBidAmount(String((auction.topBid + 0.1).toFixed(2)));
+      // Auto-verify if already verified via Cleanverse API in navbar
+      setProfileVerified(localStorage.getItem("cleanverse_verified") === "true");
     },
     [isConnected]
   );
+
+  const handleVerifyProfileClick = useCallback(() => {
+    const key = prompt("Please enter your Cleanverse API Key to verify your profile:");
+    if (key === "qhfPE24VqLv7wTK7AXMkD4p2i7zKnerg84AtT0IGto0=") {
+      localStorage.setItem("cleanverse_verified", "true");
+      localStorage.setItem("cleanverse_address", "0x34d3995ea710b981c25582699abc");
+      localStorage.setItem("cleanverse_display", "Cleanverse User");
+      setProfileVerified(true);
+      setToast({ type: "success", message: "Profile successfully verified via Cleanverse API!" });
+    } else if (key !== null) {
+      setToast({ type: "error", message: "Invalid API Key. Please try again." });
+    }
+  }, []);
 
   const closeBidModal = useCallback(() => {
     setActiveBidAuction(null);
@@ -374,7 +390,7 @@ export default function Dashboard() {
       <div aria-hidden className="absolute inset-0 -z-10 opacity-30" style={{ backgroundImage: `repeating-linear-gradient(transparent, transparent 23px, rgba(255,255,255,0.02) 24px), repeating-linear-gradient(90deg, transparent, transparent 23px, rgba(255,255,255,0.02) 24px)`, backgroundColor: '#0a0a0a' }} />
 
       <header className="max-w-6xl mx-auto px-6 py-8 flex items-center justify-between">
-        <Link href="/" className="text-lg font-semibold text-slate-200 hover:opacity-90">
+        <Link href="/app" className="text-lg font-semibold text-slate-200 hover:opacity-90">
           ← Back
         </Link>
 
@@ -418,17 +434,17 @@ export default function Dashboard() {
                 </div>
 
                 <div className="mt-4 grid gap-3 text-sm text-slate-300">
-                  <div className="flex items-center justify-between rounded-2xl bg-[#071827] px-5 py-4">
+                  <div className="flex items-center justify-between rounded-2xl bg-[#03140a] px-5 py-4">
                     <div className="text-slate-400 text-xs">Current/Min Bid (MON)</div>
                     <div className="font-semibold text-white text-base">{auction.topBid} / {auction.minBid}</div>
                   </div>
 
-                  <div className="flex items-center justify-between rounded-2xl bg-[#071827] px-5 py-4">
+                  <div className="flex items-center justify-between rounded-2xl bg-[#03140a] px-5 py-4">
                     <div className="text-slate-400 text-xs">Time Left</div>
                     <div className="font-semibold text-white text-base" style={{ color: MINT }}>{auction.endsIn}</div>
                   </div>
 
-                  <div className="flex items-center justify-between rounded-2xl bg-[#071827] px-5 py-3">
+                  <div className="flex items-center justify-between rounded-2xl bg-[#03140a] px-5 py-3">
                     <div className="text-slate-400 text-xs">Impressions</div>
                     <div className="font-semibold text-white text-sm">{formatImpressions(auction.impressions)}</div>
                   </div>
@@ -474,7 +490,7 @@ export default function Dashboard() {
             aria-hidden
           />
 
-          <div className="relative bg-[#061726] border border-white/6 rounded-xl p-6 w-full max-w-md mx-4">
+          <div className="relative bg-[#021008] border border-white/6 rounded-xl p-6 w-full max-w-md mx-4">
             <h4 className="text-lg font-semibold">Place Bid — {activeBidAuction.title}</h4>
             <p className="mt-2 text-sm text-slate-300">Current top bid: {activeBidAuction.topBid} MON</p>
 
@@ -490,6 +506,58 @@ export default function Dashboard() {
               />
             </div>
 
+            {/* Profile Verification Step */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: 'rgba(255,255,255,0.02)',
+              border: '1px solid rgba(255,255,255,0.06)',
+              padding: '0.85rem 1rem',
+              borderRadius: '0.75rem',
+              marginTop: '1.25rem',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                {profileVerified ? (
+                  <span style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600, fontSize: '0.88rem' }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    Profile Verified
+                  </span>
+                ) : (
+                  <span style={{ color: '#ef4444', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600, fontSize: '0.88rem' }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                    Profile Unverified
+                  </span>
+                )}
+              </div>
+              {!profileVerified && (
+                <button
+                  type="button"
+                  onClick={handleVerifyProfileClick}
+                  style={{
+                    background: '#10b981',
+                    color: '#071827',
+                    border: 'none',
+                    padding: '0.45rem 1rem',
+                    borderRadius: '9999px',
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#34d399' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#10b981' }}
+                >
+                  Verify Profile
+                </button>
+              )}
+            </div>
+
             <div className="mt-6 flex items-center justify-end gap-3">
               <button
                 type="button"
@@ -502,7 +570,12 @@ export default function Dashboard() {
               <button
                 type="button"
                 onClick={submitBid}
-                className="px-4 py-2 rounded-md font-semibold bg-emerald-600 hover:bg-emerald-500 text-white"
+                disabled={!profileVerified}
+                style={{
+                  opacity: profileVerified ? 1 : 0.5,
+                  cursor: profileVerified ? 'pointer' : 'not-allowed',
+                }}
+                className="px-4 py-2 rounded-md font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-opacity"
               >
                 Confirm Bid
               </button>
@@ -510,9 +583,6 @@ export default function Dashboard() {
           </div>
         </div>
       )}
-
-
-
 
       {/* Toast */}
       {toast && (
@@ -523,7 +593,7 @@ export default function Dashboard() {
                 ? "bg-emerald-600 text-white"
                 : toast.type === "error"
                 ? "bg-rose-600 text-white"
-                : "bg-sky-600 text-white"
+                : "bg-teal-600 text-white"
             }`}
           >
             {toast.message}

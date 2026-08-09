@@ -55,7 +55,7 @@ export function Navbar() {
 
         {/* Logo */}
         <a href="#" className="flex shrink-0 items-center" aria-label="CleanBoard home">
-          <img src="/logo.png" alt="CleanBoard" className="h-12 w-auto object-contain" style={{ maxHeight: '48px' }} />
+          <img src="/logo.png" alt="CleanBoard" className="h-[168px] w-auto object-contain" style={{ maxHeight: '168px' }} />
         </a>
 
 
